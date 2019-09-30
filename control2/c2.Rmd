@@ -1,0 +1,90 @@
+---
+title: "Reporte sobre el consumo de agua"
+subtitle: "Control 2"
+header-includes:
+  - \usepackage{placeins}
+output:
+  pdf_document:
+    fig_caption: yes
+    number_sections: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(purrr)
+data = read.csv("http://allman.rhon.itam.mx/~ebarrios/EstApl2-2019/controles/control2/consumoAguaElect.dat", header = TRUE, sep = "")
+attach(data)
+```
+## Introducción
+
+En el presente reporte se analizará el consumo de agua de cierta ciudad con respecto a su consumo de energía. Se iniciará el análisis con una  visualización del conjunto de datos. Posteriormente se ajustará un modelo lineal a partir de los datos y por último se validará el modelo. Como se mostrará a continuación, será necesario considerar distintos modelos lineales transformando la variable de salida ( el consumo de agua ). Dicha transformación sera determinada a partir de los resultados del análisis de residuales.
+
+## Gráfica de los datos
+
+La fig.1 es una gráfica de los datos en donde cada observación se representa como un punto en el plano, el eje horizontal corresponde al consumo de energía y el vertical al consumo de agua. Se puede observar una correlación positiva entre las variables. Además, parece ser que, conforme se avanza en la dirección positiva del eje horizontal, los datos se muestran más dispersos verticalmente. Lo anterior puede ser un indicio de que no se cumple el supuesto de homocedasticidad.
+
+
+
+```{r figs, echo=FALSE, fig.width=6,fig.height=6,fig.cap="\\label{fig:figs}Consumo de agua v.s. Consumo de energía", fig.pos="H"}
+gg <- ggplot(data, aes(x=c.elec, y=c.agua)) + geom_point() + labs(title="Consumo de agua v.s. Consumo de energía", x="Consumo de energia(kw/hr)", y="Consumo de agua(m^3/mes)") 
+gg
+```
+
+
+in Figure \ref{fig:figs} we see examples of plotting in R.
+
+## Primer ajuste del modelo lineal
+
+Se procederá ajustando un modelo lineal. En la fig.2 se muestran los datos  
+y la recta ajustada por medio de mínimos cuadrados. 
+
+```{r , echo=FALSE, fig.width=6,fig.height=6,fig.cap="\\label{fig:figs}Consumo de agua v.s. Consumo de energía (con recta ajustada)", fig.pos="H"}
+plot( c.agua ~ c.elec )
+fm <- lm(c.agua ~ c.elec)
+abline(fm)
+```
+
+
+En la fig.4 se despliega la gráfica de residuales contra los valores ajustados. Aproximadamente en el intervalo [8, 16] del eje horizontal, los puntos se muestran más dispersos verticalmente. En el caso de homocedasticidad los puntos no deberían mostrar ningún patron discernible. En este caso parece ser que el supuesto no se cumple
+
+## Transformación Box-Cox
+```{r}
+lim_inf = -3
+lim_sup = 3
+step= 0.05
+alpha = 0.1
+y = c.agua
+lambdas = seq(from=lim_inf, to = lim_sup, by = step)
+geo_mean = reduce(y, function(y1,y2) y1*y2)
+geo_mean = geo_mean ^ ( 1/length(y))
+y_arr = as.array(y)
+rss <- array(1:length(lambdas))
+for (i in 1:length(lambdas)) {
+  lambda <- lambdas[i]
+  if( lambda == 0){
+      y_lambda = apply(y_arr, 1, function(y) geo_mean*log(y))
+  }else{
+    y_lambda = apply(y_arr, 1, function(y) (y^lambda)/(lambda*geo_mean^(lambda-1)) )
+  }
+  fm <- lm(y_lambda ~ c.elec) 
+  rss[i] = sum(resid(fm)^2)
+  
+  
+}
+plot(rss ~ lambdas, ylim =c(180, 250)) 
+y_ic = min(rss)*(1 + qt(1-alpha, length(y) -2 )/length(y-2))
+abline( h = y_ic)
+ic <- match(rss[rss < y_ic], rss)
+print("Lambdas en el ic")
+print(lambdas[ic])
+min(rss)
+min_lambda <- lambdas[which.min(rss)]
+paste("lambda", min_lambda)
+ y_lambda = apply(y_arr, 1, function(y) log(y))
+ fm <- lm( y_lambda ~ c.elec )
+ plot( y_lambda ~ c.elec )
+ abline(fm)
+
+```
+
