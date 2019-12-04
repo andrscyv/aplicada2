@@ -52,7 +52,7 @@ En la fig.4 se despliega la gráfica de residuales contra los valores ajustados.
 ```{r}
 lim_inf = -3
 lim_sup = 3
-step= 0.05
+step= 0.005
 alpha = 0.1
 y = c.agua
 lambdas = seq(from=lim_inf, to = lim_sup, by = step)
@@ -60,6 +60,14 @@ geo_mean = reduce(y, function(y1,y2) y1*y2)
 geo_mean = geo_mean ^ ( 1/length(y))
 y_arr = as.array(y)
 rss <- array(1:length(lambdas))
+
+box_cox_transf <- function(y, lambda){
+  if(lambda != 0)
+    y^lambda
+  else
+    log(y)
+}
+
 for (i in 1:length(lambdas)) {
   lambda <- lambdas[i]
   if( lambda == 0){
@@ -73,7 +81,7 @@ for (i in 1:length(lambdas)) {
   
 }
 plot(rss ~ lambdas, ylim =c(180, 250)) 
-y_ic = min(rss)*(1 + qt(1-alpha, length(y) -2 )/length(y-2))
+y_ic = min(rss)*(1 + qt(1-alpha/2, length(y) -2 )/length(y-2))
 abline( h = y_ic)
 ic <- match(rss[rss < y_ic], rss)
 print("Lambdas en el ic")
@@ -81,10 +89,44 @@ print(lambdas[ic])
 min(rss)
 min_lambda <- lambdas[which.min(rss)]
 paste("lambda", min_lambda)
- y_lambda = apply(y_arr, 1, function(y) log(y))
+ y_lambda = box_cox_transf(y_arr, min_lambda)
  fm <- lm( y_lambda ~ c.elec )
  plot( y_lambda ~ c.elec )
  abline(fm)
+
+```
+## Intervalos de confianza
+
+Para calcular los intervalos de confianza utilizamos el primer modelo. 
+```{r}
+alpha <- 0.1
+x <- c.elec
+n <- length(y)
+fm <- lm(c.agua ~ c.elec)
+b0 <- coef(fm)[1]
+b1 <- coef(fm)[2]
+x0 <- 7.57
+y_hat <- b0 + b1*x0
+y_hat
+quant <- qt(1-alpha/2, n -2 )
+quant
+print("Intervalo de confianza al nivel")
+print(alpha)
+ms_res = sum(resid(fm)^2)/(n-2)
+se_y = sqrt(ms_res*(1/n + (x0 - mean(x))^2/sum((x-mean(x))^2) ) )
+se_y
+print(y_hat - quant*se_y)
+print(y_hat + quant*se_y)
+
+alpha <- 0.05
+quant <- qt(1-alpha/2, n -2 )
+print("Intervalo de confianza al nivel")
+print(alpha)
+x0 <- 5.1
+y_hat <- b0 + b1*x0
+se_y = sqrt(ms_res*(1+ 1/n + (x0 - mean(x))^2/sum((x-mean(x))^2) ) )
+print(y_hat - quant*se_y)
+print(y_hat + quant*se_y)
 
 ```
 
