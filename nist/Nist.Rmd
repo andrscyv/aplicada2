@@ -1,0 +1,48 @@
+---
+title: "Nist"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Realizaremos el ajuste de un polinomio de grado 10 a los datos Nist
+
+```{r}
+data <- read.csv("./datos.txt", sep="")
+attach(data)
+## Función auxiliar para graficar el polinomio resultante
+plotPolinomio <- function(x,y, color){
+  p <- data.frame(x, y)
+  p <- p[order(x), ]
+  lines(p, col=color)
+}
+plot(x, y)
+```
+
+
+### Regresión lineal con un polinomio
+```{r}
+## Regresión con polinomios 
+m1 <- lm(y ~ x + I(x^2) + I(x^3)+ I(x^4)+ I(x^5)+ I(x^6)+ I(x^7)+ I(x^8)+ I(x^9)+ I(x^10))
+y_hat <- predict(object = m1, newdata = data)
+plot(x,y)
+plotPolinomio(x, y_hat, 'red')
+summary(m1)
+```
+### Regresión lineal con polinomios ortogonales
+```{r}
+## Regresión con polinomios ortogonales
+m2 <- lm(y ~ poly(x,10))
+y_hat2 <- predict(object = m2, newdata = data)
+plot(x,y)
+plotPolinomio(x, y_hat2, 'green')
+summary(m2)
+
+```
+
+### Conclusiones
+
+Como notamos de las tablas de resultados, los coeficientes son muy distintos de los coeficientes certificados del Nist. En el primer caso inclusive el último coeficiente queda con valor indeterminado. Al primer momento de obtener estos resultados dudamos de la veracidad y pensamos que había un error, pero al graficar las predicciones a partir del modelo ajustado vemos que efectivamente corresponde a un polinomio que ajusta los datos de forma correcta.
+

@@ -1,0 +1,8 @@
+library(dplyr)
+data <- read.csv("~/aplicada2/lista6/cableTV.dat.txt", sep="")
+data <- data %>% select(-obs)
+m10 <- lm( renta ~ ninos + adultos + tvtot + valor, data = data)
+summary(m10)
+dat11 <- at11 <- read.csv("~/aplicada2/lista6/dat11.txt", sep="")
+m11 <- lm( y ~ x1 + x2 + x3 + x4, data = dat11)
+summary(m11)
