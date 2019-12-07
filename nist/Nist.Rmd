@@ -1,15 +1,16 @@
 ---
-title: "Nist"
+title: "Ajuste de un polinomio de grado 10 para los datos Filip con R"
 output: pdf_document
+urlcolor: blue
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
 ```
+En el presente texto mostraremos dos tipos distintos de regresión con polinomios utilizando la funcion lm() para los datos Filip del Nist que se muestran en la fig.1
 
-## Realizaremos el ajuste de un polinomio de grado 10 a los datos Nist
-
-```{r}
+```{r, echo=FALSE}
 data <- read.csv("./datos.txt", sep="")
 attach(data)
 ## Función auxiliar para graficar el polinomio resultante
@@ -18,31 +19,67 @@ plotPolinomio <- function(x,y, color){
   p <- p[order(x), ]
   lines(p, col=color)
 }
-plot(x, y)
+plot(x, y, main = 'Fig.1 Conjunto de datos Filip para regresión lineal')
 ```
+ 
 
-
-### Regresión lineal con un polinomio
+## Regresión lineal con un polinomio
+El primer tipo de regresión consiste en llamar a lm() indicando la forma polinomial de los regresores en la fórmula que recibe de parámetro. En este caso indicamos a la función que genere la regresión con 9 columnas extra que no están contenidas en los datos originales y que se componen de potencias de la columna 'x'. 
 ```{r}
 ## Regresión con polinomios 
 m1 <- lm(y ~ x + I(x^2) + I(x^3)+ I(x^4)+ I(x^5)+ I(x^6)+ I(x^7)+ I(x^8)+ I(x^9)+ I(x^10))
 y_hat <- predict(object = m1, newdata = data)
 plot(x,y)
 plotPolinomio(x, y_hat, 'red')
-summary(m1)
+title(main = 'Fig.2 Curva del primer modelo de regresión')
 ```
-### Regresión lineal con polinomios ortogonales
+
+
+
+```{r, echo=FALSE}
+s1 <- summary(m1)
+kable(s1$coefficients, caption = 'Tabla de coeficientes para el primer modelo')
+```
+
+Como podemos ver en la Tabla.1 de coeficientes, estos muestran una clara diferencia a los coeficientes certificados del NIST. Todos los coeficientes mostrados tienen un valor-p por debajo de 0.05, pero falta el coeficiente asociado al termino x^10. El último coeficiente falta debido a que tiene un valor 'NA', lo cual puede suceder por distintas razones, pero una posibilidad es que la matrix X`X sea 'numericamente singular' ( posibilidad que se discute en este [foro de r](https://r.789695.n4.nabble.com/NIST-StRD-linear-regression-td912034.html)). También notamos que el valor de la R-ajustada del modelo es de 0.9952 , lo que corresponde al buen ajuste que se puede observar en la fig.2.
+
+Por último mostramos la fig.3 que contiene la gráfica de residuales, en donde se muestra un poco de conglomeración de puntos cerca del valor 0.9 en el eje horizontal.
+
+```{r, echo=FALSE}
+plot(m1, which= 1)
+title('Fig.3 Gráfica de residuales para el primer modelo')
+
+```
+
+
+## Regresión lineal con polinomios ortogonales
+Debido al problema con el último coeficiente del modelo con la técnica anterior, buscamos otro método para realizar el ajuste. En este ejemplo se realiza la regresión con la asistencia de la funcion poly(), la cual utiliza polinomios ortogonales para aliviar el problema de colinearidad de los regresores.
 ```{r}
 ## Regresión con polinomios ortogonales
 m2 <- lm(y ~ poly(x,10))
 y_hat2 <- predict(object = m2, newdata = data)
 plot(x,y)
 plotPolinomio(x, y_hat2, 'green')
-summary(m2)
+title('Fig. 4 Gráfica del segundo modelo de regresión')
+
+```
+
+Como podemos observar en la Tabla.2 , la mayoria de los coeficientes tienen un valor-p por debajo de 0.01 a excepcion del coeficiente asociado a x^7, el cual tiene un valor-p ligeramente superior a 0.05. Tambien notamos que con este metodo fue posible la estimación del último coeficiente, a pesar de lo cual, los coeficientes siguen siendo considerablemente distintos a los coeficientes certificados del NIST para este conjunto de datos. Además, el modelo cuenta con una R-ajustada de 0.9963, ligeramente superior al primer modelo.
+
+```{r, echo=FALSE}
+s2 <- summary(m2)
+kable(s2$coefficients, caption = 'Tabla de coeficientes para el segundo modelo')
+```
+
+Por último mostramos la gráfica de residuales del segundo modelo en la fig.5 en donde notamos , de manera similar al primer modelo, que existe un poco de conglomeración cerca del valor 0.9 en el eje horizontal.
+
+```{r, echo=FALSE}
+plot(m2, which= 1)
+title('Fig.5 Gráfica de residuales para el segundo modelo')
 
 ```
 
 ### Conclusiones
 
-Como notamos de las tablas de resultados, los coeficientes son muy distintos de los coeficientes certificados del Nist. En el primer caso inclusive el último coeficiente queda con valor indeterminado. Al primer momento de obtener estos resultados dudamos de la veracidad y pensamos que había un error, pero al graficar las predicciones a partir del modelo ajustado vemos que efectivamente corresponde a un polinomio que ajusta los datos de forma correcta.
+Como notamos de las tablas de resultados, los coeficientes son muy distintos de los coeficientes certificados del Nist. En el primer caso inclusive el último coeficiente queda con valor indeterminado. Al primer momento de obtener estos resultados dudamos de su veracidad pero al graficar las predicciones a partir del modelo ajustado vemos que efectivamente corresponde a un polinomio que ajusta los datos de forma correcta. Ante estos resultados, se podría seguir experimentado con el conjunto de datos Filip utilizando un paquete como [Rmpfr](https://r.789695.n4.nabble.com/NIST-StRD-linear-regression-td912034.html) que permite un nivel arbitrario de precisión en las operaciones aritmeticas con la definición de nuevas clases para los tipos numéricos.
 
