@@ -1,0 +1,27 @@
+---
+title: "graficas"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r, code = readLines("./modelo.R")}
+```
+
+```{r cars}
+s1 <- summary(modelos[[1]])
+kable(s1$coefficients, caption="Coeficientes modelo 1")
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
